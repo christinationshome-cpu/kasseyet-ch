@@ -343,8 +343,7 @@
         <p class="mail"><span id="mailtxt">kontakt@kasseyet.ch</span><button type="button" class="copy" id="copyMail">Adresse kopieren</button></p>
         <p>8400 Winterthur</p>
       </div>
-      <form id="f" name="anfrage" method="POST" data-netlify="true" netlify-honeypot="bot-field" novalidate>
-        <input type="hidden" name="form-name" value="anfrage">
+      <form id="f" name="anfrage" method="POST" novalidate>
         <p hidden><label>Bitte leer lassen: <input name="bot-field" tabindex="-1" autocomplete="off"></label></p>
         <div class="row">
           <label for="f-name">Name<input id="f-name" name="name" required autocomplete="name"></label>
@@ -370,11 +369,11 @@
           <p>Wir melden uns innerhalb von 24 Stunden bei Ihnen. Wenn es eilt, erreichen Sie uns direkt unter <a href="tel:+41765710662">076 571 06 62</a>.</p>
         </div>
         <div class="result" id="result" hidden>
-          <h3 id="resultTitle" tabindex="-1">Das Senden hat nicht geklappt.</h3>
-          <p>Damit Ihre Anfrage nicht verloren geht: Senden Sie diesen Text an kontakt@kasseyet.ch. Sie können ihn kopieren oder direkt in Ihrem E-Mail-Programm öffnen.</p>
+          <h3 id="resultTitle" tabindex="-1">Ihre Nachricht ist vorbereitet.</h3>
+          <p>Klicken Sie auf «Im E-Mail-Programm öffnen» und senden Sie die Nachricht dort ab. Ohne E-Mail-Programm: Text kopieren und an info@kasseyet.ch senden.</p>
           <label for="f-out" class="sr">Vorbereitete Nachricht</label>
           <textarea id="f-out" readonly></textarea>
-          <div class="acts"><button type="button" class="btn btn-petrol" id="copyOut">Text kopieren</button><a class="btn btn-ghost" id="mailOut" href="mailto:kontakt@kasseyet.ch">Im E-Mail-Programm öffnen</a></div>
+          <div class="acts"><a class="btn btn-petrol" id="mailOut" href="mailto:info@kasseyet.ch">Im E-Mail-Programm öffnen</a><button type="button" class="btn btn-ghost" id="copyOut">Text kopieren</button></div>
         </div>
         <p class="small">Ihre Angaben verwenden wir nur, um Ihre Anfrage zu beantworten. Details finden Sie unter <a href="#datenschutz">Datenschutz</a>.</p>
       </form>
@@ -475,18 +474,8 @@ form.addEventListener("submit",e=>{
   const branche=document.getElementById("f-branche").selectedIndex>0?v("f-branche"):"nicht angegeben";
   const body=`Guten Tag\n\n${v("f-text")||"Ich interessiere mich für Ihr Angebot."}\n\nName: ${v("f-name")}\nUnternehmen: ${v("f-firma")||"-"}\nE-Mail: ${v("f-email")}\nTelefon: ${v("f-tel")||"-"}\nBranche: ${branche}\nInteresse: ${v("paket")}\n\nFreundliche Grüsse\n${v("f-name")}`;
   out.value=body;
-  mailOut.href=`mailto:${EMAIL}?subject=${encodeURIComponent("Anfrage über die Website: "+v("paket"))}&body=${encodeURIComponent(body)}`;
-  // Anfrage absenden; klappt das nicht, bleibt der Kopier-Weg als Rückfall
-  const label=sendBtn.innerHTML;
-  sendBtn.disabled=true;sendBtn.textContent="Wird gesendet …";
-  const done=ok=>{sendBtn.disabled=false;sendBtn.innerHTML=label;
-    if(ok){form.reset();sent.hidden=false;res.hidden=true;document.getElementById("sentTitle").focus();}
-    else{sent.hidden=true;res.hidden=false;document.getElementById("resultTitle").focus();}};
-  const ctl=new AbortController();const kill=setTimeout(()=>ctl.abort(),12000);
-  fetch("/",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},
-             body:new URLSearchParams(new FormData(form)).toString(),signal:ctl.signal})
-    .then(r=>{clearTimeout(kill);done(r.ok);})
-    .catch(()=>{clearTimeout(kill);done(false);});
+  mailOut.href=`mailto:info@kasseyet.ch?subject=${encodeURIComponent("Anfrage über die Website: "+v("paket"))}&body=${encodeURIComponent(body)}`;
+  sent.hidden=true;res.hidden=false;document.getElementById("resultTitle").focus();
 });
 document.getElementById("copyOut").addEventListener("click",e=>copy(out.value,e.currentTarget,out));
 </script>
