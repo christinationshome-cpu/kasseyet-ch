@@ -370,7 +370,7 @@
         </div>
         <div class="result" id="result" hidden>
           <h3 id="resultTitle" tabindex="-1">Ihre Nachricht ist vorbereitet.</h3>
-          <p>Klicken Sie auf «Im E-Mail-Programm öffnen» und senden Sie die Nachricht dort ab. Ohne E-Mail-Programm: Text kopieren und an info@kasseyet.ch senden.</p>
+          <p id="resultText">Klicken Sie auf «Im E-Mail-Programm öffnen» und senden Sie die Nachricht dort ab. Ohne E-Mail-Programm: Text kopieren und an info@kasseyet.ch senden.</p>
           <label for="f-out" class="sr">Vorbereitete Nachricht</label>
           <textarea id="f-out" readonly></textarea>
           <div class="acts"><a class="btn btn-petrol" id="mailOut" href="mailto:info@kasseyet.ch">Im E-Mail-Programm öffnen</a><button type="button" class="btn btn-ghost" id="copyOut">Text kopieren</button></div>
@@ -397,7 +397,7 @@
       <div id="datenschutz">
         <h2>Datenschutz</h2>
         <p>Verantwortlich für diese Website ist Christ Kasseyet, Kasseyet Studio, Winterthur.</p>
-        <p>Wenn Sie uns über das Kontaktformular oder per E-Mail schreiben, verwenden wir Ihre Angaben nur, um Ihre Anfrage zu beantworten. Wir geben sie nicht weiter und löschen sie, wenn sie nicht mehr gebraucht werden. Das Kontaktformular sendet selbst keine Daten ab: Ihre Angaben werden in Ihrem E-Mail-Programm als Nachricht an info@kasseyet.ch vorbereitet und erst durch Ihr Absenden an uns übermittelt. Diese Website wird über GitHub Pages (GitHub, USA) ausgeliefert, E-Mails bearbeiten wir über Google Workspace (Google, USA).</p>
+        <p>Wenn Sie uns über das Kontaktformular oder per E-Mail schreiben, verwenden wir Ihre Angaben nur, um Ihre Anfrage zu beantworten. Wir geben sie nicht weiter und löschen sie, wenn sie nicht mehr gebraucht werden. Ihre Angaben aus dem Kontaktformular (Name, Unternehmen, E-Mail, Telefon, Branche, Interesse, Nachricht) werden beim Absenden an Google Workspace (Google, USA) übermittelt, dort in einer Tabelle gespeichert und per E-Mail an info@kasseyet.ch gesendet. Diese Website wird über GitHub Pages (GitHub, USA) ausgeliefert, E-Mails bearbeiten wir über Google Workspace (Google, USA).</p>
         <p>Diese Website setzt keine Cookies und verwendet keine Analyse- oder Werbedienste. Schriften und Videos werden direkt mit der Seite geladen, ohne Anfragen an Dritte. Beim Aufruf verarbeitet der Hosting-Anbieter technisch notwendige Daten wie die IP-Adresse.</p>
         <p>Sie können jederzeit Auskunft über Ihre Daten verlangen oder deren Berichtigung und Löschung beantragen: <a href="mailto:kontakt@kasseyet.ch">kontakt@kasseyet.ch</a>.</p>
       </div>
@@ -463,7 +463,8 @@ function copy(text,btn,el){
 }
 document.getElementById("copyMail").addEventListener("click",e=>copy(EMAIL,e.currentTarget,document.getElementById("mailtxt")));
 
-// Formular: bereitet die Nachricht vor, sendet aber nichts selbst
+// Formular: sendet die Anfrage an eine Google-Tabelle (Apps Script); bei Fehler Rückfall auf E-Mail
+const FORM_URL="https://script.google.com/macros/s/AKfycbwxnpDfyDmP0_u0OYxoEiHJQ4mnnYMFOepzT0YeFc7HS8qp_t_0lQwdpIoPl7cN5mcb/exec";
 const form=document.getElementById("f"),msg=document.getElementById("msg"),res=document.getElementById("result"),out=document.getElementById("f-out"),mailOut=document.getElementById("mailOut"),sent=document.getElementById("sent"),sendBtn=document.getElementById("sendBtn");
 document.querySelectorAll("[data-paket]").forEach(a=>a.addEventListener("click",()=>{document.getElementById("paket").value=a.dataset.paket;}));
 form.addEventListener("submit",e=>{
@@ -475,7 +476,19 @@ form.addEventListener("submit",e=>{
   const body=`Guten Tag\n\n${v("f-text")||"Ich interessiere mich für Ihr Angebot."}\n\nName: ${v("f-name")}\nUnternehmen: ${v("f-firma")||"-"}\nE-Mail: ${v("f-email")}\nTelefon: ${v("f-tel")||"-"}\nBranche: ${branche}\nInteresse: ${v("paket")}\n\nFreundliche Grüsse\n${v("f-name")}`;
   out.value=body;
   mailOut.href=`mailto:info@kasseyet.ch?subject=${encodeURIComponent("Anfrage über die Website: "+v("paket"))}&body=${encodeURIComponent(body)}`;
-  sent.hidden=true;res.hidden=false;document.getElementById("resultTitle").focus();
+  const data=new URLSearchParams(new FormData(form));
+  if(document.getElementById("f-branche").selectedIndex===0)data.set("branche","nicht angegeben");
+  const label=sendBtn.innerHTML;
+  sendBtn.disabled=true;sendBtn.textContent="Wird gesendet …";msg.textContent="";
+  const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),12000);
+  fetch(FORM_URL,{method:"POST",mode:"no-cors",body:data,signal:ctrl.signal})
+    .then(()=>{res.hidden=true;sent.hidden=false;form.reset();document.getElementById("sentTitle").focus();})
+    .catch(()=>{
+      document.getElementById("resultTitle").textContent="Das Senden hat nicht geklappt.";
+      document.getElementById("resultText").textContent="Damit Ihre Anfrage nicht verloren geht: Klicken Sie auf «Im E-Mail-Programm öffnen» oder kopieren Sie den Text und senden Sie ihn an info@kasseyet.ch.";
+      sent.hidden=true;res.hidden=false;document.getElementById("resultTitle").focus();
+    })
+    .finally(()=>{clearTimeout(timer);sendBtn.disabled=false;sendBtn.innerHTML=label;});
 });
 document.getElementById("copyOut").addEventListener("click",e=>copy(out.value,e.currentTarget,out));
 </script>
